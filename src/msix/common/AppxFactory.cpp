@@ -32,7 +32,7 @@ namespace MSIX {
         ComPtr<IMsixFactory> self;
         ThrowHrIfFailed(QueryInterface(UuidOfImpl<IMsixFactory>::iid, reinterpret_cast<void**>(&self)));
         auto zip = ComPtr<IZipWriter>::Make<ZipObjectWriter>(outputStream);
-        auto result = ComPtr<IAppxPackageWriter>::Make<AppxPackageWriter>(self.Get(), zip);
+        auto result = ComPtr<IAppxPackageWriter>::Make<AppxPackageWriter>(self.Get(), zip, false);
         *packageWriter = result.Detach();
         #endif
         return static_cast<HRESULT>(Error::OK);
@@ -85,10 +85,21 @@ namespace MSIX {
     } CATCH_RETURN();
 
     // IAppxBundleFactory
-    HRESULT STDMETHODCALLTYPE AppxFactory::CreateBundleWriter(IStream *outputStream, UINT64 bundleVersion, IAppxBundleWriter **bundleWriter) noexcept try
+    HRESULT STDMETHODCALLTYPE AppxFactory::CreateBundleWriter(IStream *outputStream, UINT64 /*bundleVersion*/, IAppxBundleWriter **bundleWriter) noexcept try
     {
         THROW_IF_BUNDLE_NOT_ENABLED
-        NOTIMPLEMENTED;
+        THROW_IF_PACK_NOT_ENABLED
+        ThrowErrorIf(Error::InvalidParameter, (outputStream == nullptr || bundleWriter == nullptr || *bundleWriter != nullptr), "Invalid parameter");
+        // We should never be here is packing if disabled, but the compiler
+        // is not smart enough to remove it and the linker will fail.
+        #ifdef MSIX_PACK 
+        ComPtr<IMsixFactory> self;
+        ThrowHrIfFailed(QueryInterface(UuidOfImpl<IMsixFactory>::iid, reinterpret_cast<void**>(&self)));
+        auto zip = ComPtr<IZipWriter>::Make<ZipObjectWriter>(outputStream);
+        auto result = ComPtr<IAppxBundleWriter>::Make<AppxPackageWriter>(self.Get(), zip, true);
+        *bundleWriter = result.Detach();
+        #endif
+        return static_cast<HRESULT>(Error::OK);
     } CATCH_RETURN();
 
     HRESULT STDMETHODCALLTYPE AppxFactory::CreateBundleReader(IStream *inputStream, IAppxBundleReader **bundleReader) noexcept try

@@ -1731,6 +1731,12 @@ MSIX_API HRESULT STDMETHODCALLTYPE PackPackage(
     char* outputPackage
 ) noexcept;
 
+MSIX_API HRESULT STDMETHODCALLTYPE BundlePackage(
+    MSIX_VALIDATION_OPTION validationOption,
+    char* directoryPath,
+    char* outputPackage
+) noexcept;
+
 #endif // MSIX_PACK
 
 // A call to called CoCreateAppxFactory is required before start using the factory on non-windows platforms specifying

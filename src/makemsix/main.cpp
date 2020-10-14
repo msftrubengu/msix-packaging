@@ -542,11 +542,16 @@ Command CreatePackCommand()
 
     result.SetInvocationFunc([](const Invocation& invocation)
         {
-            return PackPackage(
-                MSIX_PACKUNPACK_OPTION::MSIX_PACKUNPACK_OPTION_NONE,
+            // TODO: implement CreateBundleCommand
+            return BundlePackage(
                 MSIX_VALIDATION_OPTION::MSIX_VALIDATION_OPTION_FULL,
                 const_cast<char*>(invocation.GetOptionValue("-d").c_str()),
                 const_cast<char*>(invocation.GetOptionValue("-p").c_str()));
+            //return PackPackage(
+            //    MSIX_PACKUNPACK_OPTION::MSIX_PACKUNPACK_OPTION_NONE,
+            //    MSIX_VALIDATION_OPTION::MSIX_VALIDATION_OPTION_FULL,
+            //    const_cast<char*>(invocation.GetOptionValue("-d").c_str()),
+            //    const_cast<char*>(invocation.GetOptionValue("-p").c_str()));
         });
 
     return result;

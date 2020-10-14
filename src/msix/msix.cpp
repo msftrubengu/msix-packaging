@@ -288,4 +288,38 @@ MSIX_API HRESULT STDMETHODCALLTYPE PackPackage(
     return static_cast<HRESULT>(MSIX::Error::OK);
 } CATCH_RETURN();
 
+// TODO: add other flags
+MSIX_API HRESULT STDMETHODCALLTYPE BundlePackage(
+    MSIX_VALIDATION_OPTION validationOption,
+    char* directoryPath,
+    char* outputPackage
+) noexcept try
+{
+    ThrowErrorIfNot(MSIX::Error::InvalidParameter, 
+        (directoryPath != nullptr && outputPackage != nullptr), 
+        "Invalid parameters");
+
+    auto from = MSIX::ComPtr<IDirectoryObject>::Make<MSIX::DirectoryObject>(directoryPath);
+    auto deleteFile = MSIX::scope_exit([&outputPackage]
+    {
+        remove(outputPackage);
+    });
+
+    MSIX::ComPtr<IStream> stream;
+    ThrowHrIfFailed(CreateStreamOnFile(outputPackage, false, &stream));
+
+    MSIX::ComPtr<IAppxBundleFactory> factory;
+    // We don't need to use the caller's heap here because we're not marshalling any strings
+    // out to the caller.  So default to new / delete[] and be done with it!
+    ThrowHrIfFailed(CoCreateAppxBundleFactoryWithHeap(InternalAllocate, InternalFree, validationOption, MSIX_APPLICABILITY_OPTION_FULL, &factory));
+
+    MSIX::ComPtr<IAppxBundleWriter> writer;
+    // TODO figure out version
+    ThrowHrIfFailed(factory->CreateBundleWriter(stream.Get(), 0, &writer));
+    writer.As<IPackageWriter>()->PackPayloadFiles(from);
+    ThrowHrIfFailed(writer->Close());
+    deleteFile.release();
+    return static_cast<HRESULT>(MSIX::Error::OK);
+} CATCH_RETURN();
+
 #endif // MSIX_PACK
